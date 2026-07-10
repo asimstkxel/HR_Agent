@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "skills": {
+    "business-analyst": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "skillPath": "skills/business-analyst/SKILL.md",
+      "computedHash": "2e69edc526936d87889f56ce50795a664797f1feb478fa548056587b69bb3615"
+    },
+    "langchain": {
+      "source": "claude-dev-suite/claude-dev-suite",
+      "sourceType": "github",
+      "skillPath": "skills/ai-integration/langchain/SKILL.md",
+      "computedHash": "7e67f41ed361ba04744b12113b222e40b926b1f00f89447ac92697aae11401a7"
+    },
+    "langchain-rag": {
+      "source": "langchain-ai/langchain-skills",
+      "sourceType": "github",
+      "skillPath": "config/skills/langchain-rag/SKILL.md",
+      "computedHash": "53fa807b2094c4ee9136ff23a9330321c1a22959870e4a1f7bd53b753b623f94"
+    },
+    "orchestrator": {
+      "source": "local",
+      "sourceType": "local",
+      "skillPath": ".agents/skills/orchestrator/SKILL.md",
+      "computedHash": ""
+    },
+    "frontend": {
+      "source": "local",
+      "sourceType": "local",
+      "skillPath": ".agents/skills/frontend/SKILL.md",
+      "computedHash": ""
+    }
+  }
+}
