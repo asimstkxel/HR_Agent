@@ -51,13 +51,22 @@ function isPostedWithinDays(result: TavilyResult, days: number = 1): boolean {
     return false;
   }
 
-  // Check for inline date like "posted on 2026-07-11" and validate it
+  // Check for inline dates: "posted on 2026-07-11", "July 2, 2026", "Jul 8, 2026"
   const inlineDateMatch = combined.match(/\bposted\s+on\s+(\d{4}-\d{2}-\d{2})\b/);
   if (inlineDateMatch) {
     const inlineDate = new Date(inlineDateMatch[1]);
     if (!isNaN(inlineDate.getTime())) {
       const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
       return inlineDate >= cutoff;
+    }
+  }
+  // Match "July 2, 2026" or "Jul 8, 2026" or "January 15, 2026"
+  const monthDateMatch = combined.match(/\b(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\s+(\d{1,2}),?\s+(\d{4})\b/);
+  if (monthDateMatch) {
+    const parsed = new Date(`${monthDateMatch[1]} ${monthDateMatch[2]}, ${monthDateMatch[3]}`);
+    if (!isNaN(parsed.getTime())) {
+      const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+      return parsed >= cutoff;
     }
   }
 
@@ -108,6 +117,17 @@ function extractPostingAge(result: TavilyResult): { sortKey: number; label: stri
 
   if (/\bposted\s+today\b|\bjust\s+posted\b|\bjust now\b/.test(combined)) return { sortKey: 0, label: "Today" };
 
+  // Match absolute dates: "July 2, 2026", "Jul 8, 2026"
+  const absDateMatch = combined.match(/\b(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\s+(\d{1,2}),?\s+(\d{4})\b/);
+  if (absDateMatch) {
+    const parsed = new Date(`${absDateMatch[1]} ${absDateMatch[2]}, ${absDateMatch[3]}`);
+    if (!isNaN(parsed.getTime())) {
+      const hoursAgo = Math.floor((Date.now() - parsed.getTime()) / 3_600_000);
+      const daysAgo = Math.max(0, Math.floor(hoursAgo / 24));
+      return { sortKey: hoursAgo, label: daysAgo === 0 ? "Today" : `${daysAgo}d ago` };
+    }
+  }
+
   return { sortKey: 9999, label: "Recent" };
 }
 
@@ -127,6 +147,15 @@ function stripStaleContent(content: string, days: number): string {
     // Check for "X days ago" beyond range
     const dm = lower.match(/(?:about|approximately|over|almost|~)?\s*(\d+)\s*days?\s*ago/);
     if (dm && parseInt(dm[1], 10) > maxDays) return false;
+    // Check for absolute dates like "July 2, 2026" beyond range
+    const absMatch = lower.match(/\b(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\s+(\d{1,2}),?\s+(\d{4})\b/);
+    if (absMatch) {
+      const parsed = new Date(`${absMatch[1]} ${absMatch[2]}, ${absMatch[3]}`);
+      if (!isNaN(parsed.getTime())) {
+        const cutoff = new Date(Date.now() - maxDays * 24 * 60 * 60 * 1000);
+        if (parsed < cutoff) return false;
+      }
+    }
     return true;
   });
   return filtered.join(" ").trim() || "No recent details available.";
