@@ -6,6 +6,14 @@ import ChatInput from "@/components/ChatInput";
 import Sidebar from "@/components/Sidebar";
 import TypingIndicator from "@/components/TypingIndicator";
 import SearchFilters, { Filters, EMPTY_FILTERS } from "@/components/SearchFilters";
+import {
+  ChatSession,
+  loadSessions,
+  saveSession,
+  deleteSession,
+  generateId,
+  extractTitle,
+} from "@/lib/history";
 
 interface Message {
   role: "user" | "assistant";
@@ -33,16 +41,43 @@ export default function Home() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState<Filters>({ ...EMPTY_FILTERS });
+  const [sessions, setSessions] = useState<ChatSession[]>([]);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Load sessions from localStorage on mount
+  useEffect(() => {
+    setSessions(loadSessions());
+  }, []);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, loading]);
 
+  // Save current session whenever messages change
+  useEffect(() => {
+    if (messages.length === 0 || !activeSessionId) return;
+    const session: ChatSession = {
+      id: activeSessionId,
+      title: extractTitle(messages[0].content),
+      messages,
+      createdAt: sessions.find((s) => s.id === activeSessionId)?.createdAt || Date.now(),
+    };
+    saveSession(session);
+    setSessions(loadSessions());
+  }, [messages, activeSessionId]);
+
   const sendMessage = useCallback(
     async (text: string) => {
       const filterContext = buildFilterContext(filters);
       const fullMessage = text + filterContext;
+
+      // Create a new session if none is active
+      let sessionId = activeSessionId;
+      if (!sessionId) {
+        sessionId = generateId();
+        setActiveSessionId(sessionId);
+      }
 
       const userMsg: Message = { role: "user", content: text };
       const updatedMessages = [...messages, userMsg];
@@ -72,16 +107,44 @@ export default function Home() {
         setLoading(false);
       }
     },
-    [messages, filters],
+    [messages, filters, activeSessionId],
   );
 
   const handleNewChat = useCallback(() => {
     setMessages([]);
+    setActiveSessionId(null);
   }, []);
+
+  const handleSelectSession = useCallback((id: string) => {
+    const session = loadSessions().find((s) => s.id === id);
+    if (session) {
+      setMessages(session.messages);
+      setActiveSessionId(session.id);
+    }
+  }, []);
+
+  const handleDeleteSession = useCallback(
+    (id: string) => {
+      deleteSession(id);
+      setSessions(loadSessions());
+      if (activeSessionId === id) {
+        setMessages([]);
+        setActiveSessionId(null);
+      }
+    },
+    [activeSessionId],
+  );
 
   return (
     <div className="flex h-full">
-      <Sidebar onSuggestionClick={sendMessage} onNewChat={handleNewChat} />
+      <Sidebar
+        onSuggestionClick={sendMessage}
+        onNewChat={handleNewChat}
+        sessions={sessions}
+        activeSessionId={activeSessionId}
+        onSelectSession={handleSelectSession}
+        onDeleteSession={handleDeleteSession}
+      />
 
       {/* Main chat area */}
       <div className="flex-1 flex flex-col h-full min-w-0">
