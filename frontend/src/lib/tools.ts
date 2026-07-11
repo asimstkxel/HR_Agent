@@ -35,17 +35,19 @@ function isPostedWithinDays(result: TavilyResult, days: number = 1): boolean {
   ];
 
   // Check relative time mentions and compare against the allowed days range
-  const daysAgoMatch = combined.match(/\b(\d+)\s*days?\s*ago\b/);
+  // Handle optional prefixes like "about", "approximately", "over", "~"
+  const daysAgoMatch = combined.match(/\b(?:about|approximately|over|almost|~)?\s*(\d+)\s*days?\s*ago\b/);
   if (daysAgoMatch) {
     const mentionedDays = parseInt(daysAgoMatch[1], 10);
     return mentionedDays <= days;
   }
-  const weeksAgoMatch = combined.match(/\b(\d+)\s*weeks?\s*ago\b/);
+  const weeksAgoMatch = combined.match(/\b(?:about|approximately|over|almost|~)?\s*(\d+)\s*weeks?\s*ago\b/);
   if (weeksAgoMatch) {
     const mentionedDays = parseInt(weeksAgoMatch[1], 10) * 7;
     return mentionedDays <= days;
   }
-  if (/\b\d+\s*months?\s*ago\b/.test(combined) || /\b\d+\s*years?\s*ago\b/.test(combined)) {
+  if (/\b(?:about|approximately|over|almost|~)?\s*\d+\s*months?\s*ago\b/.test(combined) ||
+      /\b(?:about|approximately|over|almost|~)?\s*\d+\s*years?\s*ago\b/.test(combined)) {
     return false;
   }
 
@@ -90,16 +92,19 @@ function extractPostingAge(result: TavilyResult): { sortKey: number; label: stri
     } catch { /* fall through */ }
   }
 
-  // Parse from content
+  // Parse from content — handle optional "about/approximately/over" prefix
   const combined = `${result.title || ""} ${result.content || ""}`.toLowerCase();
-  const minsMatch = combined.match(/\b(\d+)\s*(minute|min)s?\s*ago\b/);
+  const prefix = /(?:about|approximately|over|almost|~)?\s*/;
+  const minsMatch = combined.match(new RegExp(`\\b${prefix.source}(\\d+)\\s*(minute|min)s?\\s*ago\\b`));
   if (minsMatch) return { sortKey: 0, label: `${minsMatch[1]}m ago` };
-  const hoursMatch = combined.match(/\b(\d+)\s*hours?\s*ago\b/);
+  const hoursMatch = combined.match(new RegExp(`\\b${prefix.source}(\\d+)\\s*hours?\\s*ago\\b`));
   if (hoursMatch) return { sortKey: parseInt(hoursMatch[1], 10), label: `${hoursMatch[1]}h ago` };
-  const daysMatch = combined.match(/\b(\d+)\s*days?\s*ago\b/);
+  const daysMatch = combined.match(new RegExp(`\\b${prefix.source}(\\d+)\\s*days?\\s*ago\\b`));
   if (daysMatch) return { sortKey: parseInt(daysMatch[1], 10) * 24, label: `${daysMatch[1]}d ago` };
-  const weeksMatch = combined.match(/\b(\d+)\s*weeks?\s*ago\b/);
+  const weeksMatch = combined.match(new RegExp(`\\b${prefix.source}(\\d+)\\s*weeks?\\s*ago\\b`));
   if (weeksMatch) return { sortKey: parseInt(weeksMatch[1], 10) * 168, label: `${weeksMatch[1]}w ago` };
+  const monthsMatch = combined.match(new RegExp(`\\b${prefix.source}(\\d+)\\s*months?\\s*ago\\b`));
+  if (monthsMatch) return { sortKey: parseInt(monthsMatch[1], 10) * 720, label: `${monthsMatch[1]}mo ago` };
 
   if (/\bposted\s+today\b|\bjust\s+posted\b|\bjust now\b/.test(combined)) return { sortKey: 0, label: "Today" };
 
