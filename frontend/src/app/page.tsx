@@ -11,12 +11,9 @@ interface Message {
   content: string;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
 export default function Home() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
-  const [sessionId] = useState(() => crypto.randomUUID());
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -26,14 +23,18 @@ export default function Home() {
   const sendMessage = useCallback(
     async (text: string) => {
       const userMsg: Message = { role: "user", content: text };
-      setMessages((prev) => [...prev, userMsg]);
+      const updatedMessages = [...messages, userMsg];
+      setMessages(updatedMessages);
       setLoading(true);
 
       try {
-        const res = await fetch(`${API_URL}/api/chat`, {
+        const res = await fetch("/api/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message: text, session_id: sessionId }),
+          body: JSON.stringify({
+            message: text,
+            history: messages,
+          }),
         });
 
         if (!res.ok) throw new Error(`Server error: ${res.status}`);
@@ -43,19 +44,18 @@ export default function Home() {
       } catch {
         setMessages((prev) => [
           ...prev,
-          { role: "assistant", content: "Sorry, I couldn't connect to the server. Please make sure the backend is running on port 8000." },
+          { role: "assistant", content: "Sorry, something went wrong. Please check that API keys are configured and try again." },
         ]);
       } finally {
         setLoading(false);
       }
     },
-    [sessionId],
+    [messages],
   );
 
   const handleNewChat = useCallback(() => {
     setMessages([]);
-    fetch(`${API_URL}/api/reset?session_id=${sessionId}`, { method: "POST" }).catch(() => {});
-  }, [sessionId]);
+  }, []);
 
   return (
     <div className="flex h-full">
