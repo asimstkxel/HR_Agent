@@ -22,14 +22,17 @@ function isPostedWithin24Hours(result: TavilyResult): boolean {
   const combined = `${title} ${text}`;
 
   // Matches: "posted today", "1 hour ago", "5 hours ago", "just now", "minutes ago"
+  // NOTE: bare "today" is excluded — "Apply today" doesn't mean "posted today"
   const recentPatterns = [
-    /\btoday\b/,
+    /\bposted\s+today\b/,
+    /\bjust\s+posted\b/,
     /\bjust now\b/,
     /\b\d+\s*(minute|min)s?\s*ago\b/,
     /\b\d+\s*hours?\s*ago\b/,
     /\b1\s*day\s*ago\b/,
     /\bposted\s*(just\s*)?now\b/,
-    /\bnew\b.*\btoday\b/,
+    /\bnew\s+today\b/,
+    /\bposted\s+on\s+\d{4}-\d{2}-\d{2}\b/,
   ];
 
   // Matches: "X days ago" (where X > 1), "weeks ago", "months ago"
@@ -44,6 +47,16 @@ function isPostedWithin24Hours(result: TavilyResult): boolean {
   // If content explicitly says it's old, reject it
   for (const pattern of stalePatterns) {
     if (pattern.test(combined)) return false;
+  }
+
+  // Check for inline date like "posted on 2026-07-11" and validate it
+  const inlineDateMatch = combined.match(/\bposted\s+on\s+(\d{4}-\d{2}-\d{2})\b/);
+  if (inlineDateMatch) {
+    const inlineDate = new Date(inlineDateMatch[1]);
+    if (!isNaN(inlineDate.getTime())) {
+      const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      return inlineDate >= cutoff;
+    }
   }
 
   // If content indicates it's recent, accept it
