@@ -160,12 +160,12 @@ export const toolDefinitions = [
     function: {
       name: "search_jobs",
       description:
-        "Search for job listings. Defaults to last 24 hours unless user specifies a different date range via filters.",
+        "Search for job listings. IMPORTANT: Always pass days=1 unless the user explicitly sets a different date filter via [Filters: Date posted: ...].",
       parameters: {
         type: "object",
         properties: {
           query: { type: "string", description: "Job search query including role, location, experience level" },
-          days: { type: "number", description: "Number of days to search back. Default 1 (24h). Use 3, 7, or 30 based on user's date filter." },
+          days: { type: "number", description: "MUST be 1 (24h) by default. Only use 3, 7, or 30 if user explicitly sets a date filter. Never default to 7." },
         },
         required: ["query"],
       },
@@ -176,12 +176,12 @@ export const toolDefinitions = [
     function: {
       name: "linkedin_job_search",
       description:
-        "Search LinkedIn for job postings. Defaults to last 24 hours unless user specifies a different date range.",
+        "Search LinkedIn for job postings. IMPORTANT: Always pass days=1 unless the user explicitly sets a different date filter via [Filters: Date posted: ...].",
       parameters: {
         type: "object",
         properties: {
           query: { type: "string", description: "Job search query including role, location, experience level" },
-          days: { type: "number", description: "Number of days to search back. Default 1 (24h). Use 3, 7, or 30 based on user's date filter." },
+          days: { type: "number", description: "MUST be 1 (24h) by default. Only use 3, 7, or 30 if user explicitly sets a date filter. Never default to 7." },
         },
         required: ["query"],
       },
