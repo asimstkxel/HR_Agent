@@ -4,18 +4,12 @@ import { useState } from "react";
 
 export interface Filters {
   location: string;
-  datePosted: string;
   experienceLevel: string;
-  salaryMin: string;
-  salaryMax: string;
 }
 
 const EMPTY_FILTERS: Filters = {
   location: "",
-  datePosted: "24h",
   experienceLevel: "",
-  salaryMin: "",
-  salaryMax: "",
 };
 
 interface SearchFiltersProps {
@@ -30,9 +24,7 @@ export default function SearchFilters({ filters, onChange }: SearchFiltersProps)
 
   const activeCount = [
     filters.location,
-    filters.datePosted !== "24h" ? filters.datePosted : "",
     filters.experienceLevel,
-    filters.salaryMin || filters.salaryMax,
   ].filter(Boolean).length;
 
   return (
@@ -66,7 +58,7 @@ export default function SearchFilters({ filters, onChange }: SearchFiltersProps)
       </button>
 
       {open && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-2 mb-1 p-3 rounded-xl border border-border bg-card">
+        <div className="grid grid-cols-2 gap-3 mt-2 mb-1 p-3 rounded-xl border border-border bg-card">
           {/* Location */}
           <div>
             <label className="text-xs font-medium text-muted block mb-1">Location</label>
@@ -77,21 +69,6 @@ export default function SearchFilters({ filters, onChange }: SearchFiltersProps)
               placeholder="e.g. Lahore, Remote"
               className="w-full text-sm px-3 py-2 rounded-lg border border-border bg-background outline-none focus:border-primary placeholder:text-muted"
             />
-          </div>
-
-          {/* Date Posted */}
-          <div>
-            <label className="text-xs font-medium text-muted block mb-1">Date Posted</label>
-            <select
-              value={filters.datePosted}
-              onChange={(e) => onChange({ ...filters, datePosted: e.target.value })}
-              className="w-full text-sm px-3 py-2 rounded-lg border border-border bg-background outline-none focus:border-primary"
-            >
-              <option value="24h">Last 24 hours</option>
-              <option value="3d">Last 3 days</option>
-              <option value="7d">Last 7 days</option>
-              <option value="30d">Last 30 days</option>
-            </select>
           </div>
 
           {/* Experience Level */}
@@ -110,30 +87,9 @@ export default function SearchFilters({ filters, onChange }: SearchFiltersProps)
             </select>
           </div>
 
-          {/* Salary Range (USD) */}
-          <div>
-            <label className="text-xs font-medium text-muted block mb-1">Salary (USD/year)</label>
-            <div className="flex gap-1.5">
-              <input
-                type="number"
-                value={filters.salaryMin}
-                onChange={(e) => onChange({ ...filters, salaryMin: e.target.value })}
-                placeholder="Min"
-                className="w-1/2 text-sm px-2 py-2 rounded-lg border border-border bg-background outline-none focus:border-primary placeholder:text-muted"
-              />
-              <input
-                type="number"
-                value={filters.salaryMax}
-                onChange={(e) => onChange({ ...filters, salaryMax: e.target.value })}
-                placeholder="Max"
-                className="w-1/2 text-sm px-2 py-2 rounded-lg border border-border bg-background outline-none focus:border-primary placeholder:text-muted"
-              />
-            </div>
-          </div>
-
           {/* Clear button */}
           {activeCount > 0 && (
-            <div className="col-span-2 md:col-span-4 flex justify-end">
+            <div className="col-span-2 flex justify-end">
               <button
                 onClick={() => onChange({ ...EMPTY_FILTERS })}
                 className="text-xs text-muted hover:text-foreground transition-colors"

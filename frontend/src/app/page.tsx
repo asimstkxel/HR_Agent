@@ -23,16 +23,7 @@ interface Message {
 function buildFilterContext(filters: Filters): string {
   const parts: string[] = [];
   if (filters.location) parts.push(`Location: ${filters.location}`);
-  if (filters.datePosted !== "24h") {
-    const labels: Record<string, string> = { "3d": "last 3 days", "7d": "last 7 days", "30d": "last 30 days" };
-    parts.push(`Date posted: ${labels[filters.datePosted] || filters.datePosted}`);
-  }
   if (filters.experienceLevel) parts.push(`Experience level: ${filters.experienceLevel}`);
-  if (filters.salaryMin || filters.salaryMax) {
-    const min = filters.salaryMin ? `$${Number(filters.salaryMin).toLocaleString()}` : "any";
-    const max = filters.salaryMax ? `$${Number(filters.salaryMax).toLocaleString()}` : "any";
-    parts.push(`Salary range (USD/year): ${min} - ${max}`);
-  }
   if (parts.length === 0) return "";
   return `\n\n[Filters: ${parts.join(" | ")}]`;
 }
