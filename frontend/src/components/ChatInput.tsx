@@ -42,7 +42,7 @@ export default function ChatInput({ onSend, disabled }: ChatInputProps) {
   };
 
   return (
-    <div className="border-t border-border bg-card px-4 py-3">
+    <div>
       <div className="max-w-3xl mx-auto flex items-end gap-3">
         <textarea
           ref={textareaRef}
