@@ -5,15 +5,34 @@ import ChatMessage from "@/components/ChatMessage";
 import ChatInput from "@/components/ChatInput";
 import Sidebar from "@/components/Sidebar";
 import TypingIndicator from "@/components/TypingIndicator";
+import SearchFilters, { Filters, EMPTY_FILTERS } from "@/components/SearchFilters";
 
 interface Message {
   role: "user" | "assistant";
   content: string;
 }
 
+function buildFilterContext(filters: Filters): string {
+  const parts: string[] = [];
+  if (filters.location) parts.push(`Location: ${filters.location}`);
+  if (filters.datePosted !== "24h") {
+    const labels: Record<string, string> = { "3d": "last 3 days", "7d": "last 7 days", "30d": "last 30 days" };
+    parts.push(`Date posted: ${labels[filters.datePosted] || filters.datePosted}`);
+  }
+  if (filters.experienceLevel) parts.push(`Experience level: ${filters.experienceLevel}`);
+  if (filters.salaryMin || filters.salaryMax) {
+    const min = filters.salaryMin ? `$${Number(filters.salaryMin).toLocaleString()}` : "any";
+    const max = filters.salaryMax ? `$${Number(filters.salaryMax).toLocaleString()}` : "any";
+    parts.push(`Salary range (USD/year): ${min} - ${max}`);
+  }
+  if (parts.length === 0) return "";
+  return `\n\n[Filters: ${parts.join(" | ")}]`;
+}
+
 export default function Home() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
+  const [filters, setFilters] = useState<Filters>({ ...EMPTY_FILTERS });
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -22,6 +41,9 @@ export default function Home() {
 
   const sendMessage = useCallback(
     async (text: string) => {
+      const filterContext = buildFilterContext(filters);
+      const fullMessage = text + filterContext;
+
       const userMsg: Message = { role: "user", content: text };
       const updatedMessages = [...messages, userMsg];
       setMessages(updatedMessages);
@@ -32,7 +54,7 @@ export default function Home() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            message: text,
+            message: fullMessage,
             history: messages,
           }),
         });
@@ -50,7 +72,7 @@ export default function Home() {
         setLoading(false);
       }
     },
-    [messages],
+    [messages, filters],
   );
 
   const handleNewChat = useCallback(() => {
@@ -88,8 +110,11 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Input */}
-        <ChatInput onSend={sendMessage} disabled={loading} />
+        {/* Filters + Input */}
+        <div className="border-t border-border bg-card px-4 py-3">
+          <SearchFilters filters={filters} onChange={setFilters} />
+          <ChatInput onSend={sendMessage} disabled={loading} />
+        </div>
       </div>
     </div>
   );

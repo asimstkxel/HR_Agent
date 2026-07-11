@@ -4,13 +4,13 @@ function getTavily() {
   return tavily({ apiKey: process.env.TAVILY_API_KEY! });
 }
 
-function isPostedWithin24Hours(result: TavilyResult): boolean {
+function isPostedWithinDays(result: TavilyResult, days: number = 1): boolean {
   // Check publishedDate field if available
   if (result.publishedDate) {
     try {
       const parsed = new Date(result.publishedDate);
       if (!isNaN(parsed.getTime())) {
-        const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
         return parsed >= cutoff;
       }
     } catch { /* fall through to content check */ }
@@ -32,21 +32,21 @@ function isPostedWithin24Hours(result: TavilyResult): boolean {
     /\b1\s*day\s*ago\b/,
     /\bposted\s*(just\s*)?now\b/,
     /\bnew\s+today\b/,
-    /\bposted\s+on\s+\d{4}-\d{2}-\d{2}\b/,
   ];
 
-  // Matches: "X days ago" (where X > 1), "weeks ago", "months ago"
-  const stalePatterns = [
-    /\b[2-9]\s*days?\s*ago\b/,
-    /\b\d{2,}\s*days?\s*ago\b/,
-    /\b\d+\s*weeks?\s*ago\b/,
-    /\b\d+\s*months?\s*ago\b/,
-    /\b\d+\s*years?\s*ago\b/,
-  ];
-
-  // If content explicitly says it's old, reject it
-  for (const pattern of stalePatterns) {
-    if (pattern.test(combined)) return false;
+  // Check relative time mentions and compare against the allowed days range
+  const daysAgoMatch = combined.match(/\b(\d+)\s*days?\s*ago\b/);
+  if (daysAgoMatch) {
+    const mentionedDays = parseInt(daysAgoMatch[1], 10);
+    return mentionedDays <= days;
+  }
+  const weeksAgoMatch = combined.match(/\b(\d+)\s*weeks?\s*ago\b/);
+  if (weeksAgoMatch) {
+    const mentionedDays = parseInt(weeksAgoMatch[1], 10) * 7;
+    return mentionedDays <= days;
+  }
+  if (/\b\d+\s*months?\s*ago\b/.test(combined) || /\b\d+\s*years?\s*ago\b/.test(combined)) {
+    return false;
   }
 
   // Check for inline date like "posted on 2026-07-11" and validate it
@@ -54,7 +54,7 @@ function isPostedWithin24Hours(result: TavilyResult): boolean {
   if (inlineDateMatch) {
     const inlineDate = new Date(inlineDateMatch[1]);
     if (!isNaN(inlineDate.getTime())) {
-      const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
       return inlineDate >= cutoff;
     }
   }
@@ -64,7 +64,7 @@ function isPostedWithin24Hours(result: TavilyResult): boolean {
     if (pattern.test(combined)) return true;
   }
 
-  // No date info found — exclude by default (strict 24h enforcement)
+  // No date info found — exclude by default (strict enforcement)
   return false;
 }
 
@@ -75,15 +75,16 @@ interface TavilyResult {
   publishedDate?: string;
 }
 
-function formatResults(results: TavilyResult[], label: string): string {
-  const recent = results.filter((r) => isPostedWithin24Hours(r));
+function formatResults(results: TavilyResult[], label: string, days: number = 1): string {
+  const recent = results.filter((r) => isPostedWithinDays(r, days));
+  const timeLabel = days === 1 ? "Last 24 Hours" : `Last ${days} Days`;
 
-  const lines = [`${label} (Last 24 Hours):\n`];
+  const lines = [`${label} (${timeLabel}):\n`];
 
   if (recent.length === 0) {
     lines.push(
-      "No jobs found posted in the last 24 hours for this query.\n" +
-      "Try broadening your search with different keywords, a wider location, or check back tomorrow.\n"
+      `No jobs found posted in the ${timeLabel.toLowerCase()} for this query.\n` +
+      "Try broadening your search with different keywords, a wider location, or check back later.\n"
     );
     return lines.join("\n");
   }
@@ -96,33 +97,35 @@ function formatResults(results: TavilyResult[], label: string): string {
   return lines.join("\n");
 }
 
-export async function searchJobs(query: string): Promise<string> {
+export async function searchJobs(query: string, days: number = 1): Promise<string> {
   const today = new Date().toISOString().split("T")[0];
-  const response = await getTavily().search(`job listings hiring ${query} posted today ${today}`, {
+  const timeHint = days <= 1 ? `posted today ${today}` : `posted recently ${today}`;
+  const response = await getTavily().search(`job listings hiring ${query} ${timeHint}`, {
     maxResults: 15,
     searchDepth: "advanced",
     includeAnswer: true,
-    days: 1,
+    days,
   });
 
   let output = "";
   if (response.answer) output += `Summary:\n${response.answer}\n\n`;
-  output += formatResults(response.results as TavilyResult[], "Job Listings Found");
+  output += formatResults(response.results as TavilyResult[], "Job Listings Found", days);
   return output;
 }
 
-export async function linkedinJobSearch(query: string): Promise<string> {
+export async function linkedinJobSearch(query: string, days: number = 1): Promise<string> {
   const today = new Date().toISOString().split("T")[0];
-  const response = await getTavily().search(`site:linkedin.com/jobs ${query} posted today ${today}`, {
+  const timeHint = days <= 1 ? `posted today ${today}` : `posted recently ${today}`;
+  const response = await getTavily().search(`site:linkedin.com/jobs ${query} ${timeHint}`, {
     maxResults: 15,
     searchDepth: "advanced",
     includeAnswer: true,
-    days: 1,
+    days,
   });
 
   let output = "";
   if (response.answer) output += `LinkedIn Summary:\n${response.answer}\n\n`;
-  output += formatResults(response.results as TavilyResult[], "LinkedIn Job Listings");
+  output += formatResults(response.results as TavilyResult[], "LinkedIn Job Listings", days);
   return output;
 }
 
@@ -163,10 +166,13 @@ export const toolDefinitions = [
     function: {
       name: "search_jobs",
       description:
-        "Search for job listings posted in the last 24 hours. Use for broad job queries.",
+        "Search for job listings. Defaults to last 24 hours unless user specifies a different date range via filters.",
       parameters: {
         type: "object",
-        properties: { query: { type: "string", description: "Job search query" } },
+        properties: {
+          query: { type: "string", description: "Job search query including role, location, experience level" },
+          days: { type: "number", description: "Number of days to search back. Default 1 (24h). Use 3, 7, or 30 based on user's date filter." },
+        },
         required: ["query"],
       },
     },
@@ -176,10 +182,13 @@ export const toolDefinitions = [
     function: {
       name: "linkedin_job_search",
       description:
-        "Search LinkedIn for job postings from the last 24 hours.",
+        "Search LinkedIn for job postings. Defaults to last 24 hours unless user specifies a different date range.",
       parameters: {
         type: "object",
-        properties: { query: { type: "string", description: "Job search query" } },
+        properties: {
+          query: { type: "string", description: "Job search query including role, location, experience level" },
+          days: { type: "number", description: "Number of days to search back. Default 1 (24h). Use 3, 7, or 30 based on user's date filter." },
+        },
         required: ["query"],
       },
     },
@@ -219,9 +228,9 @@ export const toolDefinitions = [
 export async function executeTool(name: string, args: Record<string, string>): Promise<string> {
   switch (name) {
     case "search_jobs":
-      return searchJobs(args.query);
+      return searchJobs(args.query, Number(args.days) || 1);
     case "linkedin_job_search":
-      return linkedinJobSearch(args.query);
+      return linkedinJobSearch(args.query, Number(args.days) || 1);
     case "linkedin_company_lookup":
       return linkedinCompanyLookup(args.company_name);
     case "estimate_salary":
