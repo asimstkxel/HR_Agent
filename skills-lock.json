@@ -30,6 +30,12 @@
       "sourceType": "local",
       "skillPath": ".agents/skills/frontend/SKILL.md",
       "computedHash": ""
+    },
+    "vercel": {
+      "source": "local",
+      "sourceType": "local",
+      "skillPath": ".agents/skills/vercel/SKILL.md",
+      "computedHash": ""
     }
   }
 }

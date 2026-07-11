@@ -2,12 +2,13 @@
 name: orchestrator
 description: |
   Master orchestrator that analyzes incoming tasks and delegates them to the appropriate
-  specialized skill: business-analyst, langchain-rag, langchain (agents/chains), or frontend.
+  specialized skill: business-analyst, langchain-rag, langchain (agents/chains), frontend,
+  or vercel (deployment/DevOps).
   Use this skill as the default entry point for complex or ambiguous requests.
 
-  USE WHEN: user gives a broad task that spans analysis, RAG, agent development, or UI;
-  when it's unclear which skill to invoke; when a task requires coordination across
-  multiple skills.
+  USE WHEN: user gives a broad task that spans analysis, RAG, agent development, UI, or
+  deployment; when it's unclear which skill to invoke; when a task requires coordination
+  across multiple skills.
 
   DO NOT USE FOR: tasks that clearly belong to a single skill — invoke that skill directly.
 ---
@@ -103,6 +104,33 @@ You are the orchestrator agent for the Hr_Agent project. Your role is to analyze
 
 ---
 
+### 5. `vercel`
+**Domain:** Vercel deployment, DevOps, CI/CD, environment variables, domains, serverless functions, build configuration, and production troubleshooting.
+
+**Delegate when the task involves:**
+- Deploying or redeploying to Vercel (production, preview, staging)
+- Configuring vercel.json, root directory, framework presets
+- Managing environment variables (add, remove, pull)
+- Connecting GitHub repos for auto-deploy
+- Setting up custom domains and SSL
+- Troubleshooting build failures, 500 errors, or deployment issues
+- Rolling back deployments
+- Monitoring deployment logs and health
+- Configuring serverless or edge functions
+- Any CI/CD, infrastructure, or DevOps task on Vercel
+
+**Example triggers:**
+- "Deploy this to Vercel"
+- "Fix the 500 error on production"
+- "Add environment variables to Vercel"
+- "Connect the GitHub repo to Vercel"
+- "Set up a custom domain"
+- "Rollback to the previous deployment"
+- "Check the deployment logs"
+- "Redeploy after code changes"
+
+---
+
 ## Delegation Rules
 
 ### Step 1 — Classify the Request
@@ -114,6 +142,7 @@ Read the user's request and identify the primary domain:
 | Mentions documents, embeddings, vector store, chunks, retrieval, RAG, search relevance | `langchain-rag` |
 | Mentions agents, tools, chains, LCEL, structured output, streaming, LangGraph | `langchain` |
 | Mentions UI, page, component, React, Next.js, Tailwind, CSS, form, layout, chat interface | `frontend` |
+| Mentions deploy, redeploy, Vercel, production, staging, env vars, domain, SSL, rollback, build error, CI/CD | `vercel` |
 
 ### Step 2 — Handle Ambiguity
 If a request spans multiple domains, decompose it:
@@ -131,7 +160,8 @@ When decomposing, respect dependencies:
 1. Data/Infrastructure layer first  → langchain-rag (vector store, ingestion)
 2. Application logic second         → langchain (agents, chains, tools)
 3. User interface third              → frontend (pages, components, API wiring)
-4. Analytics/reporting last          → business-analyst (KPIs, dashboards)
+4. Deployment fourth                 → vercel (deploy, env vars, domains, CI/CD)
+5. Analytics/reporting last          → business-analyst (KPIs, dashboards)
 ```
 
 ### Step 4 — Compose the Response
@@ -174,8 +204,11 @@ When delegating, use this format:
 | "build a chat interface for the agent" | `frontend` + `langchain` |
 | "job listings page with filters" | `frontend` |
 | "dashboard UI with analytics data" | `frontend` + `business-analyst` |
+| "deploy to Vercel", "redeploy", "fix 500 error" | `vercel` |
+| "deploy the frontend to production" | `frontend` + `vercel` |
+| "build feature and deploy" | `frontend`/`langchain` + `vercel` |
 | "analytics dashboard for AI app" | `langchain` + `business-analyst` |
-| "full AI-powered HR system" | All four skills |
+| "full AI-powered HR system" | All five skills |
 
 ---
 
