@@ -4,15 +4,55 @@ function getTavily() {
   return tavily({ apiKey: process.env.TAVILY_API_KEY! });
 }
 
-function isWithin24Hours(dateStr: string | undefined): boolean {
-  if (!dateStr) return false;
-  try {
-    const parsed = new Date(dateStr);
-    const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    return parsed >= cutoff;
-  } catch {
-    return false;
+function isPostedWithin24Hours(result: TavilyResult): boolean {
+  // Check publishedDate field if available
+  if (result.publishedDate) {
+    try {
+      const parsed = new Date(result.publishedDate);
+      if (!isNaN(parsed.getTime())) {
+        const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        return parsed >= cutoff;
+      }
+    } catch { /* fall through to content check */ }
   }
+
+  // Parse relative time from content text
+  const text = (result.content || "").toLowerCase();
+  const title = (result.title || "").toLowerCase();
+  const combined = `${title} ${text}`;
+
+  // Matches: "posted today", "1 hour ago", "5 hours ago", "just now", "minutes ago"
+  const recentPatterns = [
+    /\btoday\b/,
+    /\bjust now\b/,
+    /\b\d+\s*(minute|min)s?\s*ago\b/,
+    /\b\d+\s*hours?\s*ago\b/,
+    /\b1\s*day\s*ago\b/,
+    /\bposted\s*(just\s*)?now\b/,
+    /\bnew\b.*\btoday\b/,
+  ];
+
+  // Matches: "X days ago" (where X > 1), "weeks ago", "months ago"
+  const stalePatterns = [
+    /\b[2-9]\s*days?\s*ago\b/,
+    /\b\d{2,}\s*days?\s*ago\b/,
+    /\b\d+\s*weeks?\s*ago\b/,
+    /\b\d+\s*months?\s*ago\b/,
+    /\b\d+\s*years?\s*ago\b/,
+  ];
+
+  // If content explicitly says it's old, reject it
+  for (const pattern of stalePatterns) {
+    if (pattern.test(combined)) return false;
+  }
+
+  // If content indicates it's recent, accept it
+  for (const pattern of recentPatterns) {
+    if (pattern.test(combined)) return true;
+  }
+
+  // No date info found — exclude by default (strict 24h enforcement)
+  return false;
 }
 
 interface TavilyResult {
@@ -23,18 +63,21 @@ interface TavilyResult {
 }
 
 function formatResults(results: TavilyResult[], label: string): string {
-  const recent = results.filter((r) => isWithin24Hours(r.publishedDate));
-  const list = recent.length > 0 ? recent : results;
+  const recent = results.filter((r) => isPostedWithin24Hours(r));
 
   const lines = [`${label} (Last 24 Hours):\n`];
-  if (list.length === 0) {
-    lines.push("No jobs found posted in the last 24 hours for this query.\n");
+
+  if (recent.length === 0) {
+    lines.push(
+      "No jobs found posted in the last 24 hours for this query.\n" +
+      "Try broadening your search with different keywords, a wider location, or check back tomorrow.\n"
+    );
     return lines.join("\n");
   }
 
-  list.forEach((r, i) => {
+  recent.forEach((r, i) => {
     lines.push(
-      `${i + 1}. ${r.title}\n   URL: ${r.url}\n   Posted: ${r.publishedDate || "Recent"}\n   ${r.content || "No description available."}\n`
+      `${i + 1}. ${r.title}\n   URL: ${r.url}\n   ${r.content || "No description available."}\n`
     );
   });
   return lines.join("\n");
@@ -42,8 +85,8 @@ function formatResults(results: TavilyResult[], label: string): string {
 
 export async function searchJobs(query: string): Promise<string> {
   const today = new Date().toISOString().split("T")[0];
-  const response = await getTavily().search(`job listings hiring ${query} posted ${today}`, {
-    maxResults: 10,
+  const response = await getTavily().search(`job listings hiring ${query} posted today ${today}`, {
+    maxResults: 15,
     searchDepth: "advanced",
     includeAnswer: true,
     days: 1,
@@ -57,8 +100,8 @@ export async function searchJobs(query: string): Promise<string> {
 
 export async function linkedinJobSearch(query: string): Promise<string> {
   const today = new Date().toISOString().split("T")[0];
-  const response = await getTavily().search(`site:linkedin.com/jobs ${query} posted ${today}`, {
-    maxResults: 10,
+  const response = await getTavily().search(`site:linkedin.com/jobs ${query} posted today ${today}`, {
+    maxResults: 15,
     searchDepth: "advanced",
     includeAnswer: true,
     days: 1,
