@@ -15,8 +15,8 @@ def linkedin_job_search(query: str) -> str:
 
     today = datetime.now().strftime("%Y-%m-%d")
     results = client.search(
-        query=f"site:linkedin.com/jobs {query} posted {today}",
-        max_results=10,
+        query=f"site:linkedin.com/jobs {query} posted today {today}",
+        max_results=15,
         search_depth="advanced",
         include_answer=True,
         days=1,
