@@ -103,14 +103,11 @@ export async function searchJobs(query: string, days: number = 1): Promise<strin
   const response = await getTavily().search(`job listings hiring ${query} ${timeHint}`, {
     maxResults: 15,
     searchDepth: "advanced",
-    includeAnswer: true,
+    includeAnswer: false,
     days,
   });
 
-  let output = "";
-  if (response.answer) output += `Summary:\n${response.answer}\n\n`;
-  output += formatResults(response.results as TavilyResult[], "Job Listings Found", days);
-  return output;
+  return formatResults(response.results as TavilyResult[], "Job Listings Found", days);
 }
 
 export async function linkedinJobSearch(query: string, days: number = 1): Promise<string> {
@@ -119,14 +116,11 @@ export async function linkedinJobSearch(query: string, days: number = 1): Promis
   const response = await getTavily().search(`site:linkedin.com/jobs ${query} ${timeHint}`, {
     maxResults: 15,
     searchDepth: "advanced",
-    includeAnswer: true,
+    includeAnswer: false,
     days,
   });
 
-  let output = "";
-  if (response.answer) output += `LinkedIn Summary:\n${response.answer}\n\n`;
-  output += formatResults(response.results as TavilyResult[], "LinkedIn Job Listings", days);
-  return output;
+  return formatResults(response.results as TavilyResult[], "LinkedIn Job Listings", days);
 }
 
 export async function linkedinCompanyLookup(companyName: string): Promise<string> {
