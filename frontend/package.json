@@ -15,6 +15,12 @@
     "react-dom": "19.2.4",
     "tavily": "^2.0.0"
   },
+  "optionalDependencies": {
+    "@next/swc-linux-x64-gnu": "16.2.10",
+    "@next/swc-linux-x64-musl": "16.2.10",
+    "@next/swc-linux-arm64-gnu": "16.2.10",
+    "@next/swc-linux-arm64-musl": "16.2.10"
+  },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
