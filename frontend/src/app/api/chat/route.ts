@@ -24,7 +24,12 @@ Tools available:
 3. linkedin_company_lookup — Research a company's LinkedIn profile
 4. estimate_salary — Estimate salary ranges for a role in a location
 
-Present results with job title, company, location, posting date, key requirements, salary (if available), and application links. Always mention active filters.`;
+PRESENTATION RULES:
+- Present results SORTED by posting date (newest first) — the tool already sorts them, preserve this order.
+- For each job include: job title, company, location, posting date (from "Posted:" field in tool output), key requirements, salary (if available), and application link.
+- If location filter is set, ONLY show jobs that match that location. Skip results from other locations.
+- If experience level filter is set, ONLY show jobs matching that level. Skip mismatched results.
+- Always mention active filters at the top of your response.`;
 
 interface ChatMessage {
   role: "user" | "assistant";
