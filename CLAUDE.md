@@ -1,8 +1,18 @@
 # Hr_Agent
 
-## Orchestrator
+## GUARDRAIL: Orchestrator-First (MANDATORY)
 
-For any incoming task, first consult the orchestrator skill at `.agents/skills/orchestrator/SKILL.md` to determine which specialized skill(s) to delegate to:
+**EVERY incoming task MUST be routed through the orchestrator BEFORE any action is taken. NO EXCEPTIONS.**
+
+Before writing code, reading files, or taking any action:
+1. Read `.agents/skills/orchestrator/SKILL.md`
+2. Classify the task using the orchestrator's delegation rules
+3. Identify which skill(s) handle it
+4. State the delegation clearly, then execute
+
+This applies to ALL tasks — even if the task seems simple or the target skill is obvious.
+
+### Available Skills (via orchestrator only)
 
 - **business-analyst** — KPIs, dashboards, analytics, financial modeling, reporting
 - **langchain-rag** — RAG pipelines, document loaders, embeddings, vector stores, retrieval

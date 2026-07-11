@@ -9,6 +9,8 @@ description: |
   component, dashboard UI, chat interface, form, layout, responsive design.
 
   DO NOT USE FOR: backend logic, LLM/agent code, data analysis, database queries.
+
+  IMPORTANT: This skill must always be invoked via the orchestrator. Never call directly.
 ---
 
 ## Use this skill when
