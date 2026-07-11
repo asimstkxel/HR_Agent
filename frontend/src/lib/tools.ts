@@ -30,19 +30,7 @@ function formatResults(results: TavilyResult[], label: string): string {
   return lines.join("\n");
 }
 
-export async function searchJobs(query: string): Promise<string> {
-  const today = new Date().toISOString().split("T")[0];
-  const response = await getTavily().search(`job listings hiring ${query} posted today ${today}`, {
-    maxResults: 10,
-    searchDepth: "advanced",
-    includeAnswer: false,
-    days: 1,
-  });
-
-  return formatResults(response.results as TavilyResult[], "Job Listings Found");
-}
-
-export async function linkedinJobSearch(query: string): Promise<string> {
+export async function searchLinkedInJobs(query: string): Promise<string> {
   const today = new Date().toISOString().split("T")[0];
   const response = await getTavily().search(`site:linkedin.com/jobs ${query} posted today ${today}`, {
     maxResults: 10,
@@ -51,7 +39,31 @@ export async function linkedinJobSearch(query: string): Promise<string> {
     days: 1,
   });
 
-  return formatResults(response.results as TavilyResult[], "LinkedIn Job Listings");
+  return formatResults(response.results as TavilyResult[], "LinkedIn Jobs");
+}
+
+export async function searchIndeedJobs(query: string): Promise<string> {
+  const today = new Date().toISOString().split("T")[0];
+  const response = await getTavily().search(`site:indeed.com ${query} jobs posted today ${today}`, {
+    maxResults: 10,
+    searchDepth: "advanced",
+    includeAnswer: false,
+    days: 1,
+  });
+
+  return formatResults(response.results as TavilyResult[], "Indeed Jobs");
+}
+
+export async function searchRozeeJobs(query: string): Promise<string> {
+  const today = new Date().toISOString().split("T")[0];
+  const response = await getTavily().search(`site:rozee.pk ${query} jobs ${today}`, {
+    maxResults: 10,
+    searchDepth: "advanced",
+    includeAnswer: false,
+    days: 1,
+  });
+
+  return formatResults(response.results as TavilyResult[], "Rozee.pk Jobs");
 }
 
 export async function linkedinCompanyLookup(companyName: string): Promise<string> {
@@ -89,9 +101,9 @@ export const toolDefinitions = [
   {
     type: "function" as const,
     function: {
-      name: "search_jobs",
+      name: "search_linkedin_jobs",
       description:
-        "Search for job listings posted in the last 24 hours. Include location and experience level from user filters in the query.",
+        "Search LinkedIn for job postings from the last 24 hours. Use for professional/corporate roles.",
       parameters: {
         type: "object",
         properties: {
@@ -104,9 +116,24 @@ export const toolDefinitions = [
   {
     type: "function" as const,
     function: {
-      name: "linkedin_job_search",
+      name: "search_indeed_jobs",
       description:
-        "Search LinkedIn for job postings from the last 24 hours. Include location and experience level from user filters in the query.",
+        "Search Indeed for job postings from the last 24 hours. Use for broad job market coverage.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: { type: "string", description: "Job search query. MUST include location and experience level from [Filters:] if present." },
+        },
+        required: ["query"],
+      },
+    },
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "search_rozee_jobs",
+      description:
+        "Search Rozee.pk for job postings from the last 24 hours. Use for Pakistan-specific jobs (Lahore, Karachi, Islamabad, etc).",
       parameters: {
         type: "object",
         properties: {
@@ -150,10 +177,12 @@ export const toolDefinitions = [
 
 export async function executeTool(name: string, args: Record<string, string>): Promise<string> {
   switch (name) {
-    case "search_jobs":
-      return searchJobs(args.query);
-    case "linkedin_job_search":
-      return linkedinJobSearch(args.query);
+    case "search_linkedin_jobs":
+      return searchLinkedInJobs(args.query);
+    case "search_indeed_jobs":
+      return searchIndeedJobs(args.query);
+    case "search_rozee_jobs":
+      return searchRozeeJobs(args.query);
     case "linkedin_company_lookup":
       return linkedinCompanyLookup(args.company_name);
     case "estimate_salary":
