@@ -6,12 +6,14 @@ import os
 
 
 RECENT_PATTERNS = [
-    re.compile(r"\btoday\b", re.IGNORECASE),
+    re.compile(r"\bposted\s+today\b", re.IGNORECASE),
+    re.compile(r"\bjust\s+posted\b", re.IGNORECASE),
     re.compile(r"\bjust now\b", re.IGNORECASE),
     re.compile(r"\b\d+\s*(minute|min)s?\s*ago\b", re.IGNORECASE),
     re.compile(r"\b\d+\s*hours?\s*ago\b", re.IGNORECASE),
     re.compile(r"\b1\s*day\s*ago\b", re.IGNORECASE),
     re.compile(r"\bposted\s*(just\s*)?now\b", re.IGNORECASE),
+    re.compile(r"\bnew\s+today\b", re.IGNORECASE),
 ]
 
 STALE_PATTERNS = [
@@ -45,6 +47,16 @@ def _is_posted_within_24_hours(result: dict) -> bool:
     for pattern in STALE_PATTERNS:
         if pattern.search(combined):
             return False
+
+    # Check for inline date like "posted on 2026-07-11" and validate it
+    inline_match = re.search(r"\bposted\s+on\s+(\d{4}-\d{2}-\d{2})\b", combined)
+    if inline_match:
+        try:
+            inline_date = datetime.strptime(inline_match.group(1), "%Y-%m-%d").replace(tzinfo=timezone.utc)
+            cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
+            return inline_date >= cutoff
+        except ValueError:
+            pass
 
     # If content says it's recent, accept
     for pattern in RECENT_PATTERNS:
