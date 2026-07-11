@@ -111,6 +111,27 @@ function extractPostingAge(result: TavilyResult): { sortKey: number; label: stri
   return { sortKey: 9999, label: "Recent" };
 }
 
+function stripStaleContent(content: string, days: number): string {
+  if (!content) return content;
+  // Split content into sentences/segments and remove ones with stale time references
+  const segments = content.split(/(?<=[.!?\n])\s+/);
+  const maxDays = days;
+  const filtered = segments.filter((seg) => {
+    const lower = seg.toLowerCase();
+    // Check for "X months/years ago"
+    if (/(?:about|approximately|over|almost|~)?\s*\d+\s*months?\s*ago/.test(lower)) return false;
+    if (/(?:about|approximately|over|almost|~)?\s*\d+\s*years?\s*ago/.test(lower)) return false;
+    // Check for "X weeks ago" beyond range
+    const wm = lower.match(/(?:about|approximately|over|almost|~)?\s*(\d+)\s*weeks?\s*ago/);
+    if (wm && parseInt(wm[1], 10) * 7 > maxDays) return false;
+    // Check for "X days ago" beyond range
+    const dm = lower.match(/(?:about|approximately|over|almost|~)?\s*(\d+)\s*days?\s*ago/);
+    if (dm && parseInt(dm[1], 10) > maxDays) return false;
+    return true;
+  });
+  return filtered.join(" ").trim() || "No recent details available.";
+}
+
 function formatResults(results: TavilyResult[], label: string, days: number = 1): string {
   const recent = results.filter((r) => isPostedWithinDays(r, days));
   const timeLabel = days === 1 ? "Last 24 Hours" : `Last ${days} Days`;
@@ -131,8 +152,9 @@ function formatResults(results: TavilyResult[], label: string, days: number = 1)
     .sort((a, b) => a.age.sortKey - b.age.sortKey);
 
   sorted.forEach((r, i) => {
+    const cleanContent = stripStaleContent(r.content || "", days);
     lines.push(
-      `${i + 1}. ${r.title}\n   URL: ${r.url}\n   Posted: ${r.age.label}\n   ${r.content || "No description available."}\n`
+      `${i + 1}. ${r.title}\n   URL: ${r.url}\n   Posted: ${r.age.label}\n   ${cleanContent}\n`
     );
   });
   return lines.join("\n");
