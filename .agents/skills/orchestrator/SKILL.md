@@ -3,7 +3,7 @@ name: orchestrator
 description: |
   Master orchestrator that analyzes incoming tasks and delegates them to the appropriate
   specialized skill: business-analyst, langchain-rag, langchain (agents/chains), frontend,
-  or vercel (deployment/DevOps).
+  vercel (deployment/DevOps), or qa (manual testing/QA).
 
   MANDATORY: This orchestrator MUST be consulted for EVERY incoming task before any
   action is taken. No exceptions — even if the task clearly belongs to a single skill,
@@ -128,6 +128,29 @@ You are the orchestrator agent for the Hr_Agent project. **Every incoming task M
 
 ---
 
+### 6. `qa`
+**Domain:** Manual testing, QA, test plans, test cases, bug reports, regression testing, smoke testing, and quality assurance.
+
+**Delegate when the task involves:**
+- Creating test plans or test cases for features
+- Manual testing checklists (smoke, regression, feature-specific)
+- Writing or reviewing bug reports
+- Verifying filters, search, chat, or any feature works correctly
+- Cross-browser or responsive testing guidance
+- Edge case identification and validation
+- Pre-deployment or post-deployment quality checks
+
+**Example triggers:**
+- "Test the search filters"
+- "Create test cases for the chat feature"
+- "Write a regression checklist"
+- "Report this bug"
+- "Do a smoke test after deployment"
+- "What edge cases should we test?"
+- "Create a QA test plan for the new feature"
+
+---
+
 ## Delegation Rules
 
 ### Step 1 — Classify the Request
@@ -140,6 +163,7 @@ Read the user's request and identify the primary domain:
 | Mentions agents, tools, chains, LCEL, structured output, streaming, LangGraph | `langchain` |
 | Mentions UI, page, component, React, Next.js, Tailwind, CSS, form, layout, chat interface | `frontend` |
 | Mentions deploy, redeploy, Vercel, production, staging, env vars, domain, SSL, rollback, build error, CI/CD | `vercel` |
+| Mentions test, QA, test cases, test plan, bug report, regression, smoke test, checklist, edge cases, manual testing | `qa` |
 
 ### Step 2 — Handle Ambiguity
 If a request spans multiple domains, decompose it:
@@ -157,8 +181,9 @@ When decomposing, respect dependencies:
 1. Data/Infrastructure layer first  → langchain-rag (vector store, ingestion)
 2. Application logic second         → langchain (agents, chains, tools)
 3. User interface third              → frontend (pages, components, API wiring)
-4. Deployment fourth                 → vercel (deploy, env vars, domains, CI/CD)
-5. Analytics/reporting last          → business-analyst (KPIs, dashboards)
+4. Testing fourth                    → qa (test cases, manual testing, verification)
+5. Deployment fifth                  → vercel (deploy, env vars, domains, CI/CD)
+6. Analytics/reporting last          → business-analyst (KPIs, dashboards)
 ```
 
 ### Step 4 — Compose the Response
@@ -205,7 +230,10 @@ When delegating, use this format:
 | "deploy the frontend to production" | `frontend` + `vercel` |
 | "build feature and deploy" | `frontend`/`langchain` + `vercel` |
 | "analytics dashboard for AI app" | `langchain` + `business-analyst` |
-| "full AI-powered HR system" | All five skills |
+| "test the filters", "create test cases", "smoke test" | `qa` |
+| "build feature and test it" | `frontend`/`langchain` + `qa` |
+| "deploy and verify" | `vercel` + `qa` |
+| "full AI-powered HR system" | All skills |
 
 ---
 
