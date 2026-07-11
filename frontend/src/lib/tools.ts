@@ -4,14 +4,30 @@ function getTavily() {
   return tavily({ apiKey: process.env.TAVILY_API_KEY! });
 }
 
+function hasStaleContentDates(content: string, days: number): boolean {
+  // Check if content contains ANY dates beyond the allowed range
+  const lower = content.toLowerCase();
+  const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+  // Check absolute dates: "July 2, 2026"
+  const datePattern = /\b(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\s+(\d{1,2}),?\s+(\d{4})\b/g;
+  let match;
+  while ((match = datePattern.exec(lower)) !== null) {
+    const parsed = new Date(`${match[1]} ${match[2]}, ${match[3]}`);
+    if (!isNaN(parsed.getTime()) && parsed < cutoff) return true;
+  }
+  return false;
+}
+
 function isPostedWithinDays(result: TavilyResult, days: number = 1): boolean {
+  const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
   // Check publishedDate field if available
   if (result.publishedDate) {
     try {
       const parsed = new Date(result.publishedDate);
-      if (!isNaN(parsed.getTime())) {
-        const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-        return parsed >= cutoff;
+      if (!isNaN(parsed.getTime()) && parsed < cutoff) {
+        return false;
       }
     } catch { /* fall through to content check */ }
   }
@@ -77,6 +93,14 @@ function isPostedWithinDays(result: TavilyResult, days: number = 1): boolean {
 
   // No date info found — exclude by default (strict enforcement)
   return false;
+}
+
+// Secondary filter: reject results whose content mentions dates outside the range
+// This catches multi-job pages where publishedDate is recent but content has old listings
+function contentPassesDateFilter(result: TavilyResult, days: number): boolean {
+  const content = result.content || "";
+  if (!content) return true;
+  return !hasStaleContentDates(content, days);
 }
 
 interface TavilyResult {
@@ -162,7 +186,7 @@ function stripStaleContent(content: string, days: number): string {
 }
 
 function formatResults(results: TavilyResult[], label: string, days: number = 1): string {
-  const recent = results.filter((r) => isPostedWithinDays(r, days));
+  const recent = results.filter((r) => isPostedWithinDays(r, days) && contentPassesDateFilter(r, days));
   const timeLabel = days === 1 ? "Last 24 Hours" : `Last ${days} Days`;
 
   const lines = [`${label} (${timeLabel}):\n`];
