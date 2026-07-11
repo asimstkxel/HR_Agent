@@ -10,6 +10,8 @@ description: |
   rollback, deployment logs, or any infrastructure/DevOps task.
 
   DO NOT USE FOR: writing application code, UI components, agent logic, or data analysis.
+
+  IMPORTANT: This skill must always be invoked via the orchestrator. Never call directly.
 ---
 
 ## Use this skill when

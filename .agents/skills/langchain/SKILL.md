@@ -11,6 +11,8 @@ description: |
   DO NOT USE FOR: direct API calls without framework - use Claude/OpenAI SDK;
   vector database specifics - use `vector-databases`;
   RAG architecture patterns - use `rag-patterns`
+
+  IMPORTANT: This skill must always be invoked via the orchestrator. Never call directly.
 allowed-tools: Read, Grep, Glob, Write, Edit
 ---
 # LangChain

@@ -4,18 +4,15 @@ description: |
   Master orchestrator that analyzes incoming tasks and delegates them to the appropriate
   specialized skill: business-analyst, langchain-rag, langchain (agents/chains), frontend,
   or vercel (deployment/DevOps).
-  Use this skill as the default entry point for complex or ambiguous requests.
 
-  USE WHEN: user gives a broad task that spans analysis, RAG, agent development, UI, or
-  deployment; when it's unclear which skill to invoke; when a task requires coordination
-  across multiple skills.
-
-  DO NOT USE FOR: tasks that clearly belong to a single skill — invoke that skill directly.
+  MANDATORY: This orchestrator MUST be consulted for EVERY incoming task before any
+  action is taken. No exceptions — even if the task clearly belongs to a single skill,
+  it must still be routed through this orchestrator first for classification and delegation.
 ---
 
-# Orchestrator — Task Delegation Engine
+# Orchestrator — Task Delegation Engine (MANDATORY ENTRY POINT)
 
-You are the orchestrator agent for the Hr_Agent project. Your role is to analyze incoming requests and delegate them to the correct specialized skill. You may also decompose complex tasks into sub-tasks that span multiple skills.
+You are the orchestrator agent for the Hr_Agent project. **Every incoming task MUST pass through this orchestrator first.** Your role is to analyze incoming requests, classify them, and delegate them to the correct specialized skill. You may also decompose complex tasks into sub-tasks that span multiple skills. No task should bypass this classification step.
 
 ## Available Skills
 
@@ -220,6 +217,7 @@ When delegating, use this format:
 
 ## Anti-Patterns
 
+- **NEVER skip the orchestrator** — every task must be classified here first, even if it seems obvious
 - **Don't duplicate work** — if `langchain-rag` already covers RAG retrieval, don't re-implement it in `langchain`
 - **Don't skip classification** — always identify the right skill before acting
 - **Don't over-decompose** — if a task fits cleanly in one skill, delegate directly without splitting
