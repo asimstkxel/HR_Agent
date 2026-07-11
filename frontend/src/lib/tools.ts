@@ -75,6 +75,37 @@ interface TavilyResult {
   publishedDate?: string;
 }
 
+function extractPostingAge(result: TavilyResult): { sortKey: number; label: string } {
+  // Try publishedDate first
+  if (result.publishedDate) {
+    try {
+      const parsed = new Date(result.publishedDate);
+      if (!isNaN(parsed.getTime())) {
+        const hoursAgo = Math.floor((Date.now() - parsed.getTime()) / 3_600_000);
+        if (hoursAgo < 1) return { sortKey: 0, label: "Just now" };
+        if (hoursAgo < 24) return { sortKey: hoursAgo, label: `${hoursAgo}h ago` };
+        const daysAgo = Math.floor(hoursAgo / 24);
+        return { sortKey: hoursAgo, label: `${daysAgo}d ago` };
+      }
+    } catch { /* fall through */ }
+  }
+
+  // Parse from content
+  const combined = `${result.title || ""} ${result.content || ""}`.toLowerCase();
+  const minsMatch = combined.match(/\b(\d+)\s*(minute|min)s?\s*ago\b/);
+  if (minsMatch) return { sortKey: 0, label: `${minsMatch[1]}m ago` };
+  const hoursMatch = combined.match(/\b(\d+)\s*hours?\s*ago\b/);
+  if (hoursMatch) return { sortKey: parseInt(hoursMatch[1], 10), label: `${hoursMatch[1]}h ago` };
+  const daysMatch = combined.match(/\b(\d+)\s*days?\s*ago\b/);
+  if (daysMatch) return { sortKey: parseInt(daysMatch[1], 10) * 24, label: `${daysMatch[1]}d ago` };
+  const weeksMatch = combined.match(/\b(\d+)\s*weeks?\s*ago\b/);
+  if (weeksMatch) return { sortKey: parseInt(weeksMatch[1], 10) * 168, label: `${weeksMatch[1]}w ago` };
+
+  if (/\bposted\s+today\b|\bjust\s+posted\b|\bjust now\b/.test(combined)) return { sortKey: 0, label: "Today" };
+
+  return { sortKey: 9999, label: "Recent" };
+}
+
 function formatResults(results: TavilyResult[], label: string, days: number = 1): string {
   const recent = results.filter((r) => isPostedWithinDays(r, days));
   const timeLabel = days === 1 ? "Last 24 Hours" : `Last ${days} Days`;
@@ -89,9 +120,14 @@ function formatResults(results: TavilyResult[], label: string, days: number = 1)
     return lines.join("\n");
   }
 
-  recent.forEach((r, i) => {
+  // Sort by posting date: newest first
+  const sorted = recent
+    .map((r) => ({ ...r, age: extractPostingAge(r) }))
+    .sort((a, b) => a.age.sortKey - b.age.sortKey);
+
+  sorted.forEach((r, i) => {
     lines.push(
-      `${i + 1}. ${r.title}\n   URL: ${r.url}\n   ${r.content || "No description available."}\n`
+      `${i + 1}. ${r.title}\n   URL: ${r.url}\n   Posted: ${r.age.label}\n   ${r.content || "No description available."}\n`
     );
   });
   return lines.join("\n");
