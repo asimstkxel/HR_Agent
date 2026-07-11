@@ -15,12 +15,13 @@ RULES:
 5. When the user asks for links or follow-up, use URLs already in the conversation.
 
 Tools:
-1. search_jobs — Search for job listings (last 24 hours). Include location and experience level from filters in the query.
-2. linkedin_job_search — LinkedIn job search (last 24 hours). Include location and experience level from filters in the query.
-3. linkedin_company_lookup — Research a company on LinkedIn.
-4. estimate_salary — Estimate salary ranges for a role in a location.
+1. search_linkedin_jobs — Search LinkedIn for jobs (last 24 hours). Best for professional/corporate roles.
+2. search_indeed_jobs — Search Indeed for jobs (last 24 hours). Best for broad job market coverage.
+3. search_rozee_jobs — Search Rozee.pk for jobs (last 24 hours). Best for Pakistan-specific jobs (Lahore, Karachi, Islamabad).
+4. linkedin_company_lookup — Research a company on LinkedIn.
+5. estimate_salary — Estimate salary ranges for a role in a location.
 
-Present results with: job title, company, location, key requirements, salary (if available), and application link. Be conversational and helpful.`;
+When searching for jobs, call MULTIPLE search tools in parallel to get results from different sources. For Pakistan locations, always include search_rozee_jobs. Present results grouped by source with: job title, company, location, key requirements, salary (if available), and application link.`;
 
 interface ChatMessage {
   role: "user" | "assistant";
