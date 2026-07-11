@@ -44,6 +44,8 @@ export default function Home() {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const filtersRef = useRef<Filters>(filters);
+  filtersRef.current = filters;
 
   // Load sessions from localStorage on mount
   useEffect(() => {
@@ -69,19 +71,23 @@ export default function Home() {
 
   const sendMessage = useCallback(
     async (text: string) => {
-      const filterContext = buildFilterContext(filters);
+      // Always read latest filters from ref to avoid stale closures
+      const filterContext = buildFilterContext(filtersRef.current);
       const fullMessage = text + filterContext;
 
       // Create a new session if none is active
-      let sessionId = activeSessionId;
-      if (!sessionId) {
-        sessionId = generateId();
-        setActiveSessionId(sessionId);
-      }
+      setActiveSessionId((prev) => {
+        if (!prev) {
+          const newId = generateId();
+          return newId;
+        }
+        return prev;
+      });
 
-      const userMsg: Message = { role: "user", content: text };
-      const updatedMessages = [...messages, userMsg];
-      setMessages(updatedMessages);
+      setMessages((prev) => {
+        const userMsg: Message = { role: "user", content: text };
+        return [...prev, userMsg];
+      });
       setLoading(true);
 
       try {
@@ -107,7 +113,7 @@ export default function Home() {
         setLoading(false);
       }
     },
-    [messages, filters, activeSessionId],
+    [messages],
   );
 
   const handleNewChat = useCallback(() => {
